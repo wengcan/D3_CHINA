@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>D3_CHINA</title>
+    <link href="/bootstrap-3.3.4-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+  </head>
+<body> 
+<div class="playground">
+ <svg></svg>   
+</div> 
+<div class="btns">
+    <div class="btn-group-vertical" role="group" id="btn-group">
+      
+    </div>
+</div>    
+<script src="/js/d3.min.js"></script>
+<script src="/js/topojson.min.js"></script> 
+<script>
+var width = 1024,
+    height = 1200;
+var active = d3.select(null);    
+var projection = d3.geo.albers()
+    .rotate([-102, 0])  
+    .center([0, 30.5]) 
+    .parallels([50, 60])
+    .scale(1200)
+    .translate([width / 2, height / 2]);
+var path = d3.geo.path()
+    .projection(projection)
+    .pointRadius(2);
+var svg = d3.select("svg");
+var bg = svg.append("rect");
+var g = svg.append("g");    
+
+var layer_config ={
+        "bou1_4l":{
+            "name":"国界（线）",
+            "color":"#E66444",
+            "fill":"none"
+        }, 
+        "bou1_4p":{
+            "name":"国土",
+            "color":"#CCC",
+            "fill":"#F8EFE2"
+        },
+        "bou2_4l":{
+            "name":"省界",
+            "color":"#CCC",
+              "fill":"none"
+        },
+        "bou2_4p":{
+            "name":"省",
+            "color":"#CCC",
+            "fill":"#F8EFE2"
+        },
+        "BOUNT_line":{
+            "name":"县级行政界线",
+            "color":"#CCC",
+            "fill":"none"
+        },
+        "BOUNT_poly":{
+            "name":"县",
+            "color":"#CCC",
+            "fill":"#F8EFE2"
+        },
+        "res1_4m":{
+            "name":"首都与行政中心",
+            "color":"#538ADF",
+            "fill":"#538ADF"   
+        },
+        "res2_4m":{
+            "name":"地市级以上居民地",
+            "color":"#538ADF",
+            "fill":"none"   
+        },    
+        "XianCh_point":{
+            "name":"县级居民地",
+            "color":"#538ADF",
+            "fill":"none"   
+        },
+        "rai_4m":{
+            "name":"主要铁路",
+            "color":"#627CAF",
+            "fill":"none"            
+        },
+    
+        "roa_4m":{
+            "name":"主要公路",
+            "color":"#FFC85B",
+            "fill":"none"   
+        },    
+        "hyd1_4l":{
+            "name":"一级河流",
+            "color":"#A6BAE1",
+            "fill":"none"            
+        },
+        "hyd1_4p":{
+            "name":"一级河流(湖泊)",
+            "color":"#A6BAE1",
+            "fill":"#A6BAE1"
+        },
+        "hyd2_4l":{
+            "name":"三级以上河流",
+            "color":"#A6BAE1",
+            "fill":"none"            
+        },
+        "hyd2_4p":{
+            "name":"三级以上河流(湖泊)",
+            "color":"#A6BAE1",
+            "fill":"#A6BAE1"
+        },
+        "River4_polyline":{
+            "name":"四级河流",
+            "color":"#A6BAE1",
+            "fill":"none"   
+        },
+        "River5_polyline":{
+            "name":"五级河流",
+            "color":"#A6BAE1",
+            "fill":"none"   
+        }
+};
+    
+var overlay = {};   
+var _tempData = null;
+var btnsHTML = '<button type="button" class="btn btn-default" onclick="show_aqi()">空气质量指数地图（实时）</button>';    
+    
+var load_data= function(url,cb){
+    d3.json(url, function(error, data) {
+        if(error){
+            console.log(error);
+        }
+        cb(data);
+    });
+};
+var load_layer = function(layer){
+    load_data("/json/"+layer+".json",function(data){
+        _tempData =  topojson.feature(data, data.objects["_"+layer]);
+        overlay[layer]
+            .selectAll(".c_"+layer)
+            .data(_tempData.features)
+            .enter()
+            .append("path")
+            .attr("d",path)
+            .attr({
+                'class': "c_"+layer
+            })
+            .attr("fill",layer_config[layer].fill)
+            .style({
+                'stroke': layer_config[layer].color,
+                'stroke-width': '1px'
+            })
+        _tempData = null;                              
+    })
+};   
+var remove_all_layer_child = function(){
+    for(var i in layer_config){
+        if("undefined"!== typeof( overlay[i] )){
+           overlay[i]
+                .selectAll(".c_"+i)
+                .remove();        
+        }
+    }
+};
+var remove_aqi_child = function(){
+     if("undefined"!== typeof(aqi)){
+         aqi
+            .selectAll(".c_group-aqi")
+            .remove();
+     }
+};    
+var show_layer = function(layer){
+        remove_aqi_child();
+        remove_all_layer_child();
+        load_layer(layer);
+}; 
+
+var show_aqi = function(){
+     remove_all_layer_child();
+     //load_data("/mapi/?region=china&lang=en&v=2",function(data){
+     load_data("/json/aqi0816.json",function(data){
+        if("undefined"!== typeof(aqi)){
+            aqi
+            .selectAll(".c_group-aqi")
+            .data(data)
+            .enter()
+            .append("image")
+            .attr('class','c_group-aqi')
+            .attr('width', 25)
+            .attr('height', 25)
+            .attr("xlink:href",function(d){
+                return 'http://static.aqicn.org/aqicn/mapicon/'+d.aqi+'.2.png'
+            })
+            .attr("transform", function(d) {
+                return "translate(" + projection([d.lon,d.lat]) + ")";
+            });        
+        }
+     });
+}
+    
+    
+svg
+    .attr("width", width)
+    .attr("height", height);
+bg
+    .attr("class", "background")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill","#A4BDDF")
+    .on("click", reset);      
+g.attr("class","china map")
+
+
+var sp = g.append("g"),//subunit province
+    pd = g.append("g"),
+    pl = g.append("g");//place dot
+    sp.attr("class","group-subunit-province");
+    pd.attr("class","group-place-dot");
+    pl.attr("class","group-place-lable");    
+    for(var i in layer_config){
+        //console.log(layer[i]);
+        overlay[i] = g.append("g");
+        overlay[i]
+        .attr("class",i);
+        btnsHTML += '<button type="button" class="btn btn-default" onclick="show_layer(\''+i+'\')" >'+layer_config[i].name+'</button>';
+    }
+    document.getElementById("btn-group").innerHTML = btnsHTML;
+    /********* aqi *********/
+    var aqi = g.append("g");//aqi
+    aqi.attr("class","group-aqi");
+    aqi.attr("transform", "translate(-12.5,-20)");
+    
+d3.json("/json/china.json", function(error, cn) {
+  var subunits = topojson.feature(cn, cn.objects.subunits),
+      places = topojson.feature(cn, cn.objects.places);
+    
+    
+  sp.selectAll(".subunit")
+      .data(subunits.features)
+      .enter().append("path")
+      .attr("class", function(d) {
+            return "subunit province"; 
+      })
+      .attr("d", path)
+      .attr("fill","#F5F3EF")
+      .on("mouseover",function(d,i){
+                d3.select(this)
+                    .attr("fill","#ddc");
+            })
+            .on("mouseout",function(d,i){
+                d3.select(this)
+                    .attr("fill","#F5F3EF");
+            })
+   .on("click", clicked);
+ pd.append("path")
+      .datum(places)
+      .attr("d", path)
+      .attr("class", "place-dot");
+
+ pl.selectAll(".place-label")
+      .data(places.features)
+      .enter().append("text")
+      .attr("class", "place-label")
+      .attr("transform", function(d) { return "translate(" + projection(d.geometry.coordinates) + ")"; })
+      .attr("x", function(d) { return d.geometry.coordinates[0] > -1 ? 6 : -6; })
+      .attr("dy", ".35em")
+      .style("text-anchor", function(d) { return d.geometry.coordinates[0] > -1 ? "start" : "end"; })
+      .text(function(d) { return d.properties.name; }); 
+});
+    
+    
+function clicked(d) {
+  if (active.node() === this) return reset();
+  active.classed("active", false);
+  active = d3.select(this).classed("active", true);
+
+  var bounds = path.bounds(d),
+      dx = bounds[1][0] - bounds[0][0],
+      dy = bounds[1][1] - bounds[0][1],
+      x = (bounds[0][0] + bounds[1][0]) / 2,
+      y = (bounds[0][1] + bounds[1][1]) / 2,
+      scale = .9 / Math.max(dx / width, dy / height),
+      translate = [width / 2 - scale * x, height / 2 - scale * y];
+  
+   g.transition()
+      .duration(750)
+      .style("stroke-width", 1.5 / scale + "px")
+      .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+    aqi.transition()
+      .duration(750).attr("transform", "translate(-5,-5)");     
+    aqi
+    .selectAll(".c_group-aqi")
+    .transition()
+    .duration(750)
+    .attr('width', 40 /scale)
+    .attr('height', 40 / scale)     
+}
+
+function reset() {
+    active.classed("active", false);
+    active = d3.select(null);
+    g.transition()
+        .duration(750)
+        .style("stroke-width", "1.5px")
+        .attr("transform", "");
+    aqi    
+        .transition()
+        .duration(750).attr("transform", "translate(-12.5,-20)");    
+
+    aqi
+        .selectAll(".c_group-aqi")
+        .transition()
+        .duration(750)
+        .attr('width', 25 )
+        .attr('height', 25 )        
+        .attr('height', 25 )        
+}
+
+</script>
+

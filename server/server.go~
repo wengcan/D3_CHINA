@@ -1,0 +1,48 @@
+package main
+
+import (
+	"flag"
+	//"io/ioutil"
+	"bytes"
+	"io"
+	"net/http"
+	"path/filepath"
+	"strconv"
+)
+
+var (
+	port = flag.Int("port", 8080, "Port to listen")
+)
+
+const Version = "0.0.1"
+
+type buffer struct {
+	bytes.Buffer
+}
+
+func (b *buffer) Close() error {
+	return nil
+}
+
+func HandleErr(err error) {
+	if err != nil {
+		log.Error("Error: %v\n", err)
+	}
+}
+
+
+func main() {
+	flag.Parse()
+	docroot, err := filepath.Abs("./html")
+	HandleErr(err)
+	hServe := new(http.Server)
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(docroot))))
+	hServe.Handler = mux
+	hServe.Addr = ":" + strconv.Itoa(*port)
+
+	//":"+strconv.Itoa(*port),http.FileServer(http.Dir(docroot)) )
+	log.Notice("server running at %s:%d. CTRL + C to shutdown\n", "http://localhost", *port)
+	err = hServe.ListenAndServe()
+	HandleErr(err)
+
+}

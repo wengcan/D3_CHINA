@@ -1,0 +1,47 @@
+.playground{ width: 100%; text-align: center; background: #A4BDDF;}
+.btns{ position: fixed; top: 0; left: 0; padding: 10px;}
+.playground svg{ margin: 0 auto;}
+
+
+.subunit.CHH { fill: #ddc; }
+.subunit.CHI { fill: #ddc; }
+.subunit.TWN { fill: #cdd; }
+.subunit.HKG { fill: #cdc; }
+.subunit.MAC { fill: #dcd; }
+.subunit-label.CHH ,.subunit-label.TWN,.subunit-label.HKG,.subunit-label.MAC {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.subunit-boundary {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 2,2;
+  stroke-linejoin: round;
+}
+
+.subunit-boundary.CHI {
+  stroke: #aaa;
+}
+
+.subunit-label {
+  fill: #777;
+  fill-opacity: .5;
+  font-size: 20px;
+  font-weight: 300;
+  text-anchor: middle;
+}
+
+.place,
+.place-label {
+  fill: #444;
+}
+
+text {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+
